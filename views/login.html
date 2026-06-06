@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFM - Connexion</title>
+    <style>
+        :root {
+            --afm-blue: #326696; 
+            --snow-white: #FFFAFA; 
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--snow-white);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- BARRE DE TITRE --- */
+        .top-header {
+            background-color: var(--afm-blue);
+            color: white;
+            text-align: center;
+            padding: 12px 0;
+            width: 100%;
+        }
+
+        .top-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        /* --- ZONE CENTRALE --- */
+        .content-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        /* --- LOGO ET NOM DE L'APPLI --- */
+        .logo-area {
+            margin-bottom: 25px;
+        }
+
+        .logo-img {
+            max-width: 120px; 
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        .app-name-main {
+            display: block;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--afm-blue);
+            letter-spacing: 2px;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .app-name-sub {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--afm-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        /* --- FORMULAIRE --- */
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--afm-blue);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .forgot-password {
+            display: block;
+            margin-top: 15px;
+            color: #7A9EB7;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-header">
+        <h2>Connexion</h2>
+    </header>
+
+    <main class="content-area">
+        <div class="login-card">
+            <div class="logo-area">
+                <img src="logo.png" alt="Logo AFM" class="logo-img">
+                <span class="app-name-main">ASSET FIX</span>
+                <span class="app-name-sub">ASSET FIX MANAGER</span>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" name="email" autocomplete="off" required value="admin@gmail.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="password" name="password" autocomplete="new-password" required value="PassAdmin123">
+                </div>
+                
+                <button type="submit" class="btn-login">Connexion</button>
+                
+                <a href="#" class="forgot-password">Mot de passe oublié ?</a>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Bloque le rechargement brut de la page
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                // Envoi des données au format JSON requis par body-parser sur ton serveur
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.redirectUrl) {
+                    // Si la connexion réussit, on redirige vers l'URL fournie par ton serveur
+                    window.location.href = data.redirectUrl;
+                } else {
+                    // Si le serveur renvoie une erreur (identifiants incorrects, format, etc.)
+                    alert(data.message || "Une erreur est survenue lors de la connexion.");
+                }
+            } catch (error) {
+                console.error("Erreur de requête :", error);
+                alert("Impossible de joindre le serveur.");
+            }
+        });
+    </script>
+
+</body>
+</html>

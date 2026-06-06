@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Fix Manager - Dashboard Technicien</title>
+    <style>
+        :root {
+            --brand-main: #0066cc;
+            --brand-dark: #003366;
+            --brand-light: #f4f8fc;
+            --pure-white: #ffffff;
+            --slate-text: #1e293b;
+            --muted-gray: #64748b;
+            --border-soft: #e2e8f0;
+            --pro-gray-bg: #f8fafc;
+            
+            --priority-high: #dc2626;
+            --priority-medium: #f97316;
+            --priority-low: #16a34a;
+            
+            --status-progress: #0284c7;
+            --status-done: #16a34a;
+            --status-canceled: #dc2626;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+        }
+
+        body { 
+            background-color: #f1f5f9; 
+            color: var(--slate-text); 
+            padding: 24px; 
+            font-size: 11pt; 
+        }
+
+        /* BARRE DE NAVIGATION */
+        .navbar-container {
+            background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-main) 100%);
+            padding: 16px 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 51, 102, 0.15);
+            margin-bottom: 30px;
+        }
+        .navbar-title { 
+            font-size: 15pt; 
+            font-weight: 800; 
+            color: var(--pure-white); 
+            letter-spacing: 0.8px; 
+            text-transform: uppercase;
+        }
+
+        /* CONFIGURATION PANNEAUX */
+        .app-panel { 
+            background-color: var(--pure-white); 
+            border: 1px solid var(--border-soft); 
+            border-radius: 8px; 
+            padding: 24px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02); 
+        }
+
+        .panel-heading { 
+            font-size: 13pt; 
+            color: var(--brand-dark); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            margin-bottom: 18px; 
+        }
+
+        /* BARRE DE RECHERCHE TECHNIQUE */
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 14px 12px 40px;
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            background-color: #f8fafc;
+            font-size: 10.5pt;
+            outline: none;
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11pt;
+            color: var(--muted-gray);
+        }
+
+        /* FLUX DE TICKETS ÉLARGI */
+        .ticket-feed-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            margin-bottom: 24px; 
+        }
+
+        .ticket-feed-card { 
+            background-color: var(--pure-white); 
+            border: 1px solid var(--border-soft); 
+            border-left: 4px solid var(--brand-main); 
+            border-radius: 6px; 
+            padding: 16px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            transition: all 0.15s ease;
+        }
+
+        .card-meta-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 70%;
+        }
+
+        .ticket-title { 
+            font-size: 11.5pt; 
+            font-weight: 700; 
+            color: var(--slate-text); 
+        }
+
+        .ticket-sub { 
+            font-size: 9.5pt; 
+            color: var(--muted-gray); 
+            line-height: 1.4;
+        }
+
+        /* BOUTONS D'ACTIONS D'ÉTAT */
+        .action-flex-row { 
+            display: flex; 
+            gap: 8px; 
+        }
+
+        .btn-status-action {
+            border: none;
+            padding: 8px 14px;
+            font-size: 9pt;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--pure-white);
+            text-transform: uppercase;
+            transition: opacity 0.2s;
+        }
+
+        .btn-status-action:hover {
+            opacity: 0.9;
+        }
+
+        .btn-progress { background-color: var(--status-progress); }
+        .btn-done { background-color: var(--status-done); }
+        .btn-cancel { background-color: var(--status-canceled); }
+
+        /* BLOCS DE SAISIE DU FORMULAIRE SYSTÈME D'APPRENTISSAGE */
+        .form-field { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            margin-bottom: 16px; 
+        }
+        
+        .form-field label { 
+            font-size: 9pt; 
+            font-weight: 700; 
+            color: var(--brand-dark); 
+            text-transform: uppercase; 
+        }
+
+        .input-interactive { 
+            background-color: var(--pure-white); 
+            border: 1px solid var(--border-soft); 
+            padding: 12px; 
+            border-radius: 6px; 
+            font-size: 10.5pt; 
+            outline: none;
+            width: 100%; 
+        }
+        
+        .input-interactive:focus {
+            border-color: var(--brand-main);
+        }
+
+        /* SYSTEME D'APPRENTISSAGE EXPERT (Symptômes / SI - Solution / ALORS) */
+        .ai-knowledge-graybox { 
+            background-color: #edf2f7; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-soft); 
+            padding: 20px; 
+            margin-top: 25px; 
+        }
+
+        .knowledge-inputs-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .logic-row-premium { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            font-size: 11pt; 
+            margin-bottom: 10px; 
+        }
+
+        .badge-cond { 
+            font-weight: 900; 
+            color: var(--brand-main); 
+            width: 170px; 
+            font-size: 10pt; 
+            text-transform: uppercase;
+        }
+
+        .val-cond { 
+            font-weight: 600; 
+            color: var(--slate-text); 
+        }
+
+        .btn-submit-db {
+            background-color: var(--brand-dark);
+            color: var(--pure-white);
+            border: none;
+            padding: 12px 35px;
+            font-size: 10pt;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 12px;
+            text-transform: uppercase;
+        }
+
+        .btn-submit-db:hover {
+            background-color: var(--brand-main);
+        }
+
+        /* --- STYLES CSS POUR LA MODAL BOX PERSONNALISÉE --- */
+        .modal-overlay {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(3px); 
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box {
+            background-color: var(--pure-white);
+            padding: 26px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 51, 102, 0.2);
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            animation: modalSlideUp 0.3s ease-out;
+            border-top: 5px solid var(--brand-main);
+        }
+
+        .modal-icon {
+            font-size: 2.3rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-title {
+            font-size: 12pt;
+            font-weight: 700;
+            color: var(--brand-dark);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-text {
+            font-size: 10.5pt;
+            color: var(--slate-text);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            background-color: #f8fafc;
+            padding: 14px;
+            border-radius: 6px;
+            border-left: 3px solid var(--brand-main);
+            text-align: left;
+        }
+
+        .modal-btn-ok {
+            background-color: var(--brand-main);
+            color: var(--pure-white);
+            border: none;
+            padding: 10px 35px;
+            font-size: 10pt;
+            font-weight: 700;
+            border-radius: 20px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background 0.2s;
+        }
+
+        .modal-btn-ok:hover {
+            background-color: var(--brand-dark);
+        }
+
+        @keyframes modalSlideUp {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar-container">
+        <span class="navbar-title">Asset Fix Manager — Espace Technique</span>
+    </nav>
+
+    <main class="app-panel">
+        <div class="panel-heading">Tickets assignés</div>
+
+        <div class="search-box">
+            <input type="text" id="ticketSearch" onkeyup="filterTickets()" placeholder="Rechercher un ticket par son numéro, nom, problème ou lieu...">
+        </div>
+        
+        <div class="ticket-feed-list" id="feedList"></div>
+
+        <div class="ai-knowledge-graybox">
+            <div class="panel-heading" style="margin-bottom: 12px; font-size: 11pt; color: var(--brand-dark);">
+                Système d'Apprentissage Expert
+            </div>
+            
+            <div class="knowledge-inputs-grid">
+                <div class="form-field" style="margin-bottom:0;">
+                    <label for="problemInput">Symptômes</label>
+                    <input type="text" id="problemInput" class="input-interactive" placeholder="Ex: Ne refroidit plus + fort cliquetis mécanique" oninput="syncLogicRule()">
+                </div>
+                
+                <div class="form-field" style="margin-bottom:0;">
+                    <label for="solutionInput">Solution apportée</label>
+                    <input type="text" id="solutionInput" class="input-interactive" placeholder="Ex: Remplacement des roulements de turbine" oninput="syncLogicRule()">
+                </div>
+            </div>
+
+            <div class="logic-row-premium">
+                <span class="badge-cond">Symptômes / SI</span>
+                <span class="val-cond">[ <span id="previewProblem" style="color: var(--brand-main);">...</span> ]</span>
+            </div>
+            <div class="logic-row-premium">
+                <span class="badge-cond">Solution apportée / ALORS</span>
+                <span class="val-cond">[ <span id="previewSolution" style="color: var(--status-done);">...</span> ]</span>
+            </div>
+            
+            <button class="btn-submit-db" onclick="sendToExpertDatabase()">
+                Envoyer
+            </button>
+        </div>
+    </main>
+
+    <div id="techModal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modalIcon" class="modal-icon">🔔</div>
+            <div id="modalTitle" class="modal-title">Notification</div>
+            <div id="modalMessage" class="modal-text"></div>
+            <button class="modal-btn-ok" onclick="closeTechModal()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        let currentActiveTicketId = "";
+
+        // CHARGEMENT INITIAL DES TICKETS ASSIGNÉS DEPUIS LE SERVEUR COULOIR API
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTicketsFromServer();
+            setInterval(loadTicketsFromServer, 10000);
+        });
+
+        async function loadTicketsFromServer() {
+            try {
+                const response = await fetch('/api/tickets');
+                if (!response.ok) throw new Error("Échec du chargement");
+                
+                const tickets = await response.json();
+                renderTickets(tickets);
+            } catch (error) {
+                console.error("Erreur de récupération réseau API:", error);
+            }
+        }
+
+        function renderTickets(tickets) {
+            const feedList = document.getElementById('feedList');
+            
+            if (tickets.length === 0) {
+                feedList.innerHTML = `<p style="text-align:center; color:var(--muted-gray); padding: 20px;">Aucun ticket assigné en cours.</p>`;
+                return;
+            }
+
+            feedList.innerHTML = "";
+            tickets.forEach(ticket => {
+                let borderLeftColor = "var(--brand-main)";
+                let statusStyleColor = "var(--brand-dark)";
+                let priorityText = (ticket.priorite || "MOYENNE").toUpperCase();
+
+                if (ticket.etat === "En cours") {
+                    borderLeftColor = "var(--status-progress)";
+                    statusStyleColor = "var(--status-progress)";
+                } else if (ticket.etat === "Résolu" || ticket.etat === "Terminé") {
+                    borderLeftColor = "var(--status-done)";
+                    statusStyleColor = "var(--status-done)";
+                } else if (ticket.etat === "Annulé") {
+                    borderLeftColor = "var(--status-canceled)";
+                    statusStyleColor = "var(--status-canceled)";
+                } else {
+                    if (priorityText === "HAUTE") borderLeftColor = "var(--priority-high)";
+                    if (priorityText === "FAIBLE") borderLeftColor = "var(--priority-low)";
+                }
+
+                let priorityColor = "var(--priority-medium)";
+                if (priorityText === "HAUTE") priorityColor = "var(--priority-high)";
+                if (priorityText === "FAIBLE") priorityColor = "var(--priority-low)";
+
+                const safeTitre = (ticket.titre || "Équipement").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+                const safeLocalisation = (ticket.localisation || ticket.code_infrastructure || "Non spécifié").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+
+                const card = document.createElement('div');
+                card.className = "ticket-feed-card";
+                card.id = `card-${ticket.id}`;
+                card.style.borderLeftColor = borderLeftColor;
+
+                card.innerHTML = `
+                    <div class="card-meta-left">
+                        <div class="ticket-title">Ticket #TK-${ticket.id} : ${ticket.titre || "Équipement"}</div>
+                        <div class="ticket-sub"><strong>Problème :</strong> ${ticket.description || "Aucune description renseignée."}</div>
+                        <div class="ticket-sub"><strong>Lieu :</strong> ${ticket.localisation || ticket.code_infrastructure || "Non spécifié"}</div>
+                        <div class="ticket-sub"><strong>Criticité :</strong> <span style="color: ${priorityColor}; font-weight: bold;">${priorityText}</span></div>
+                        <div class="ticket-sub" id="time-container-${ticket.id}">
+                            ${ticket.etat === "Résolu" || ticket.etat === "Terminé" ? 
+                            `Terminé le : <strong style="color: var(--status-done)">${new Date(ticket.date_creation).toLocaleDateString('fr-FR')}</strong>` : 
+                            `Statut : <strong id="status-text-${ticket.id}" style="color:${statusStyleColor}">${ticket.etat || "Assigné"}</strong>`}
+                        </div>
+                    </div>
+                    <div class="action-flex-row">
+                        <button class="btn-status-action btn-progress" onclick="saveStatusUpdate('${ticket.id}', 'En cours', 'var(--status-progress)')">En cours</button>
+                        <button class="btn-status-action btn-done" onclick="markAsDone('${ticket.id}', '${safeTitre}', '${safeLocalisation}')">Terminé</button>
+                        <button class="btn-status-action btn-cancel" onclick="cancelAndReassign('${ticket.id}')">Annuler</button>
+                    </div>
+                `;
+                feedList.appendChild(card);
+            });
+        }
+
+        function filterTickets() {
+            const val = document.getElementById('ticketSearch').value.toLowerCase();
+            const cards = document.querySelectorAll('.ticket-feed-card');
+            
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                if(text.includes(val)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function openTechModal(icon, title, message) {
+            document.getElementById('modalIcon').innerText = icon;
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerHTML = message;
+            document.getElementById('techModal').style.display = 'flex';
+        }
+
+        function closeTechModal() {
+            document.getElementById('techModal').style.display = 'none';
+        }
+
+        async function saveStatusUpdate(ticketId, targetStatus, colorValue) {
+            try {
+                const response = await fetch(`/api/tickets/${ticketId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ etat: targetStatus })
+                });
+                const result = await response.json();
+                if(result.success) {
+                    updateStatusVisual(ticketId, targetStatus, colorValue);
+                }
+            } catch (err) {
+                console.error("Erreur lors de la mise à jour de l'état :", err.message);
+            }
+        }
+
+        function updateStatusVisual(ticketId, statusLabel, colorValue) {
+            const card = document.getElementById(`card-${ticketId}`);
+            const timeContainer = document.getElementById('time-container-' + ticketId);
+            
+            if(card && timeContainer) {
+                timeContainer.innerHTML = `Statut : <strong id="status-text-${ticketId}" style="color:${colorValue}">${statusLabel}</strong>`;
+                card.style.borderLeftColor = colorValue;
+            }
+        }
+
+        async function cancelAndReassign(ticketId) {
+            const card = document.getElementById(`card-${ticketId}`);
+            const ticketTitleText = card ? card.querySelector('.ticket-title').innerText : `#TK-${ticketId}`;
+
+            try {
+                const response = await fetch(`/api/tickets/${ticketId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ etat: 'Annulé' })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatusVisual(ticketId, 'Annulé', 'var(--status-canceled)');
+                    openTechModal(
+                        '🔄', 
+                        'Signalement Envoyé', 
+                        `Le ticket <strong>${ticketTitleText}</strong> a été marqué comme annulé.<br><br>` +
+                        `🚨 <strong>Alerte Opérateur synchrone :</strong> Le ticket vient d'être renvoyé et réapparaît instantanément sur le dashboard web de l'opérateur pour réaffectation.`
+                    );
+                    setTimeout(loadTicketsFromServer, 2000);
+                }
+            } catch (err) {
+                console.error("Erreur serveur annulation :", err.message);
+            }
+        }
+
+        async function markAsDone(ticketId, problemTitle, location) {
+            currentActiveTicketId = ticketId;
+            
+            try {
+                const response = await fetch(`/api/tickets/${ticketId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ etat: 'Résolu' })
+                });
+
+                const result = await response.json();
+                if(result.success) {
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString('fr-FR');
+                    const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+                    const timeContainer = document.getElementById(`time-container-${ticketId}`);
+                    if (timeContainer) {
+                        timeContainer.innerHTML = `Terminé le : <strong style="color: var(--status-done)">${dateStr} à ${timeStr}</strong>`;
+                        document.getElementById(`card-${ticketId}`).style.borderLeftColor = 'var(--status-done)';
+                    }
+
+                    document.getElementById('problemInput').value = `${problemTitle} (${location})`;
+                    document.getElementById('solutionInput').value = "";
+                    document.getElementById('solutionInput').focus();
+                    syncLogicRule();
+                }
+            } catch (err) {
+                console.error("Erreur résolution ticket:", err.message);
+            }
+        }
+
+        function syncLogicRule() {
+            const probVal = document.getElementById('problemInput').value;
+            const solVal = document.getElementById('solutionInput').value;
+
+            document.getElementById('previewProblem').innerText = probVal ? probVal : "...";
+            document.getElementById('previewSolution').innerText = solVal ? solVal : "...";
+        }
+
+        // TRANSMISSION ASYNCHRONE INTÉGRÉE (MOTEUR EXPERT / API SOLUTIONS)
+        function sendToExpertDatabase() {
+            const prob = document.getElementById('problemInput').value;
+            const sol = document.getElementById('solutionInput').value;
+
+            if (!prob || !sol) {
+                openTechModal(
+                    '❌', 
+                    'Champs Incomplets', 
+                    'Veuillez renseigner les <strong>Symptômes</strong> et la <strong>Solution apportée</strong> avant de valider votre règle expert.'
+                );
+                return;
+            }
+
+            // Transmission asynchrone à l'API d'apprentissage automatique de la GMAO
+            fetch('/api/solutions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    symptome: prob,
+                    solution: sol,
+                    details_solution: "Saisie manuelle via le Moteur Expert Technicien."
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                openTechModal(
+                    '🧠', 
+                    'Apprentissage Réussi', 
+                    'La règle de diagnostic (SI / ALORS) a été enregistrée avec succès dans le moteur de connaissances de la GMAO.'
+                );
+                document.getElementById('problemInput').value = "";
+                document.getElementById('solutionInput').value = "";
+                if (typeof syncLogicRule === 'function') syncLogicRule();
+            })
+            .catch(err => {
+                console.error("Erreur d'apprentissage base de connaissances :", err);
+                openTechModal(
+                    '⚠️', 
+                    'Erreur Réseau', 
+                    "Impossible de joindre le service d'apprentissage de la GMAO."
+                );
+            });
+        }
+    </script>
+</body>
+</html>

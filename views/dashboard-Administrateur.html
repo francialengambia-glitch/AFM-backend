@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFM - Dashboard Administrateur</title>
+    <style>
+        :root {
+            --brand-main: #0066cc; 
+            --brand-dark: #003366;
+            --brand-light: #f4f8fc;
+            --pure-white: #ffffff;
+            --slate-text: #333333;
+            --muted-gray: #718096;
+            --border-soft: #e2e8f0;
+            --bg-body: #f8fafc;
+            --accent-danger: #dc2626;
+            --accent-warn: #d97706;
+            --status-done: #16a34a;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+        }
+
+        body { 
+            background-color: var(--bg-body); 
+            color: var(--slate-text); 
+        }
+
+        .navbar {
+            background-color: #0066cc; 
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--pure-white);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .navbar-logo {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .navbar-title {
+            font-size: 13pt;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 10pt;
+        }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--pure-white);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .welcome-section {
+            margin-bottom: 25px;
+        }
+
+        .welcome-section h1 {
+            font-size: 18pt;
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .welcome-section p {
+            font-size: 10pt;
+            color: var(--muted-gray);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 35px;
+        }
+
+        .stat-card {
+            background: var(--pure-white);
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-soft);
+        }
+
+        .stat-val {
+            font-size: 24pt;
+            font-weight: 700;
+            color: #0066cc;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 9pt;
+            color: var(--muted-gray);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .section-title {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-left: 3px solid #0066cc;
+            padding-left: 10px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .menu-item {
+            background: var(--pure-white);
+            border: 1px solid var(--border-soft);
+            border-radius: 6px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--slate-text);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-color: #0066cc;
+        }
+
+        .menu-icon {
+            font-size: 24pt;
+        }
+
+        .menu-label {
+            font-size: 11pt;
+            font-weight: 600;
+        }
+
+        .modal {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--pure-white);
+            border-radius: 8px;
+            width: 95%;
+            max-width: 1100px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-soft);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .btn-close {
+            background: none; border: none; font-size: 16pt; cursor: pointer; color: var(--muted-gray);
+        }
+
+        .crud-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 10pt;
+        }
+
+        .crud-table th {
+            background-color: #f8fafc;
+            color: var(--slate-text);
+            font-weight: 600;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid var(--border-soft);
+        }
+
+        .crud-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-soft);
+            vertical-align: middle;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            font-size: 9pt;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-add { background-color: #0066cc; color: white; margin-bottom: 15px; }
+        .btn-edit { background-color: #d97706; color: white; margin-right: 5px; }
+        .btn-delete { background-color: var(--accent-danger); color: white; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-soft);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-soft);
+            border-radius: 4px;
+            outline: none;
+            font-size: 10pt;
+        }
+
+        .form-control:focus {
+            border-color: var(--brand-main);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 9pt;
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .badge-statut {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 8pt;
+            font-weight: 600;
+        }
+        .badge-statut.ok       { background: #dcfce7; color: #16a34a; }
+        .badge-statut.panne    { background: #fee2e2; color: #dc2626; }
+        .badge-statut.maint    { background: #fef9c3; color: #d97706; }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .report-box {
+            background: #f8fafc;
+            border: 1px dashed #0066cc;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .report-metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 10pt;
+            border-bottom: 1px dashed var(--border-soft);
+            padding-bottom: 6px;
+        }
+
+        .modal-overlay-tech {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(3px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box-tech {
+            background-color: var(--pure-white);
+            padding: 26px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 51, 102, 0.2);
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            animation: modalSlideUpTech 0.3s ease-out;
+            border-top: 5px solid var(--brand-main);
+        }
+
+        .modal-icon-tech { font-size: 2.3rem; margin-bottom: 10px; }
+        .modal-title-tech {
+            font-size: 12pt; font-weight: 700; color: var(--brand-dark);
+            text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;
+        }
+        .modal-text-tech {
+            font-size: 10.5pt; color: var(--slate-text); line-height: 1.5;
+            margin-bottom: 20px; background-color: #f8fafc; padding: 14px;
+            border-radius: 6px; border-left: 3px solid var(--brand-main); text-align: left;
+        }
+        .modal-btn-ok-tech {
+            background-color: var(--brand-main); color: var(--pure-white);
+            border: none; padding: 10px 35px; font-size: 10pt; font-weight: 700;
+            border-radius: 20px; cursor: pointer; text-transform: uppercase; transition: background 0.2s;
+        }
+        .modal-btn-ok-tech:hover { background-color: var(--brand-dark); }
+
+        @keyframes modalSlideUpTech {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <img src="logo.png" alt="AFM Logo" class="navbar-logo">
+            <span class="navbar-title">Dashboard Administrateur</span>
+        </div>
+        <div class="navbar-actions">
+            <span>Admin AFM</span>
+            <a href="#" class="btn-logout" id="logoutLink">Déconnexion</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <section class="welcome-section">
+            <h1>Bienvenue sur AFM</h1>
+            <p>Suivi en temps réel du parc infrastructurel</p>
+        </section>
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-val" id="total-infra-count">0</div>
+                <div class="stat-label">Actifs Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" style="color: var(--accent-danger);">1</div>
+                <div class="stat-label">En Panne</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" style="color: var(--accent-warn);">12</div>
+                <div class="stat-label">Interventions</div>
+            </div>
+        </section>
+
+        <section style="margin-bottom: 25px;">
+            <div class="section-title">Gestion du parc</div>
+            
+            <div class="menu-grid">
+                <div class="menu-item" onclick="openModal('modal-infra')">
+                    <span class="menu-icon">🏢</span>
+                    <span class="menu-label">Infrastructures</span>
+                </div>
+
+                <a href="dashboard-technicien" class="menu-item">
+                    <span class="menu-icon">🛠️</span>
+                    <span class="menu-label">Maintenances</span>
+                </a>
+
+                <a href="dashboard-operateur" class="menu-item">
+                    <span class="menu-icon">👥</span>
+                    <span class="menu-label">Espace Opérateur</span>
+                </a>
+
+                <div class="menu-item" onclick="openModal('modal-reports')">
+                    <span class="menu-icon">📊</span>
+                    <span class="menu-label">Rapports</span>
+                </div>
+            </div>
+        </section>
+
+        <button class="btn-action btn-add" style="width: 100%; padding: 14px; font-size: 11pt;" onclick="openModal('modal-users')">
+            ⚙️ Ouvrir la console de gestion des Utilisateurs
+        </button>
+
+    </div>
+
+    <!-- MODAL INFRASTRUCTURES COMPLET AVEC FORMULAIRE ET COLONNES RESTAURÉES -->
+    <div id="modal-infra" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="infraModalTitle">Enregistrer une Infrastructure</div>
+                <button class="btn-close" onclick="closeModal('modal-infra')">&times;</button>
+            </div>
+
+            <!-- Flag pour savoir si on est en mode édition ou création -->
+            <input type="hidden" id="editModeFlag" value="false">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Code Unique Equipment (Clé Primaire)</label>
+                    <input type="text" id="infraCodeUnique" class="form-control" placeholder="Ex: YARIS2026, CLIM-01...">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nom de l'équipement</label>
+                    <input type="text" id="infraNom" class="form-control" placeholder="Ex: Climatiseur Split Central">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Type d'équipement</label>
+                    <div style="display: flex; gap: 5px;">
+                        <select id="infraType" class="form-control" style="flex: 1;">
+                            <option value="">-- Chargement des types... --</option>
+                        </select>
+                        <input type="text" id="newTypeInput" class="form-control" placeholder="Nouveau type..." style="display:none; flex: 1;">
+                        <button type="button" class="btn-action btn-add" id="toggleTypeBtn" style="margin-bottom:0; padding: 0 10px;" onclick="toggleAddTypeMode()">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Modèle</label>
+                    <input type="text" id="infraModele" class="form-control" placeholder="Ex: R410A SHIFT">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Numéro de Série</label>
+                    <input type="text" id="infraNumSerie" class="form-control" placeholder="Ex: SN-89472942-X">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Localisation / Salle</label>
+                    <input type="text" id="infraLieu" class="form-control" placeholder="Ex: Salle B2 (Bloc Nord)">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Date d'installation</label>
+                    <input type="date" id="infraDateInstallation" class="form-control">
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Statut initial de l'équipement</label>
+                    <select id="infraStatut" class="form-control">
+                        <option value="Opérationnel">Opérationnel</option>
+                        <option value="En Panne">En Panne</option>
+                        <option value="En Maintenance">En Maintenance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-action btn-add" id="btnSubmitInfra" onclick="addItem('infra')">Enregistrer l'équipement</button>
+                <button class="btn-action" id="btnCancelEdit" style="background-color: #cbd5e1; color: #475569; display: none;" onclick="resetInfraForm()">Annuler la modification</button>
+            </div>
+
+            <!-- TABLE DES INFRASTRUCTURES AVEC TOUTES LES COLONNES DEMANDÉES -->
+            <table class="crud-table" id="table-infra">
+                <thead>
+                    <tr>
+                        <th>Code Unique</th>
+                        <th>Nom Équipement</th>
+                        <th>Modèle</th>
+                        <th>N° Série</th>
+                        <th>Localisation</th>
+                        <th>Type ID</th>
+                        <th>Date d'Inst.</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL UTILISATEURS -->
+    <div id="modal-users" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Gestion des Utilisateurs</div>
+                <button class="btn-close" onclick="closeModal('modal-users')">&times;</button>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <div class="form-group">
+                    <label class="form-label">Nom</label>
+                    <input type="text" id="userNom" class="form-control" placeholder="Ex: Dupont">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prénom</label>
+                    <input type="text" id="userPrenom" class="form-control" placeholder="Ex: Jean">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Adresse Email</label>
+                    <input type="email" id="userEmail" class="form-control" placeholder="Ex: jean.dupont@gmail.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Numéro de téléphone</label>
+                    <input type="tel" id="userTelephone" class="form-control" placeholder="Ex: +33 6 12 34 56 78">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date de naissance</label>
+                    <input type="date" id="userDateNaissance" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" id="userPassword" class="form-control" placeholder="••••••••">
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">Rôle Affecté</label>
+                    <select id="userRole" class="form-control">
+                        <option value="Employé">Employé</option>
+                        <option value="Opérateur">Opérateur</option>
+                        <option value="Technicien">Technicien</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn-action btn-add" onclick="addItem('user')">Enregistrer</button>
+
+            <table class="crud-table" id="table-users">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                        <th>Date de naissance</th>
+                        <th>Rôle</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr id="row-user-1">
+                        <td>Binôme</td>
+                        <td>Cindy</td>
+                        <td>cindy.binome@gmail.com</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>Opérateur</td>
+                        <td>
+                            <button class="btn-action btn-delete" onclick="deleteLocalRow(this)">Supprimer</button>
+                        </td>
+                    </tr>
+                    <tr id="row-user-2">
+                        <td>Mendes</td>
+                        <td>Paul</td>
+                        <td>paul.mendes@gmail.com</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>Technicien</td>
+                        <td>
+                            <button class="btn-action btn-delete" onclick="deleteLocalRow(this)">Supprimer</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL RAPPORTS -->
+    <div id="modal-reports" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Indicateurs de Performance Historiques</div>
+                <button class="btn-close" onclick="closeModal('modal-reports')">&times;</button>
+            </div>
+            
+            <p style="font-size: 10pt; color: var(--muted-gray); margin-bottom: 15px;">Analyses issues en direct des calculs de jointures entre vos tables tickets et interventions :</p>
+            
+            <div class="report-grid">
+                <div class="report-box">
+                    <h4 style="font-size: 11pt; color: #0066cc; margin-bottom: 12px;">1. Temps Moyen de Résolution (MTTR)</h4>
+                    <p style="font-size: 9pt; color: var(--muted-gray); margin-bottom: 10px;">Durée moyenne calculée de la prise en charge à la validation "Terminé".</p>
+                    <div class="report-metric"><span>Froid & Climatisation :</span> <strong style="color:var(--brand-main)">1h 24min</strong></div>
+                    <div class="report-metric"><span>Réseaux & Commutateurs :</span> <strong style="color:var(--brand-main)">45min</strong></div>
+                    <div class="report-metric"><span>Électricité de Puissance :</span> <strong style="color:var(--brand-main)">2h 05min</strong></div>
+                </div>
+
+                <div class="report-box">
+                    <h4 style="font-size: 11pt; color: #0066cc; margin-bottom: 12px;">2. Taux de Récurrence des Pannes</h4>
+                    <p style="font-size: 9pt; color: var(--muted-gray); margin-bottom: 10px;">Liste des infrastructures nécessitant une alerte de remplacement complet.</p>
+                    <div class="report-metric"><span>INF-001 (Split Central) :</span> <strong style="color:var(--accent-danger)">4 Pannes / Mois</strong></div>
+                    <div class="report-metric"><span>INF-002 (Groupe Électrogène) :</span> <strong style="color:var(--accent-warn)">2 Pannes / Mois</strong></div>
+                    <div class="report-metric"><span>INF-003 (Backbone Réseau) :</span> <strong style="color:var(--status-done)">1 Panne / Mois</strong></div>
+                </div>
+            </div>
+
+            <button class="btn-action btn-add" style="width: 100%; margin-top: 25px; padding: 12px;" onclick="openTechModal('📥', 'Exportation Lancée', 'Le téléchargement du fichier de synthèse au format PDF Professionnel a démarré avec succès.')">
+                Exporter l'analyse au format PDF Professionnel
+            </button>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION SYSTEM -->
+    <div id="techModal" class="modal-overlay-tech">
+        <div class="modal-box-tech">
+            <div id="modalIconTech" class="modal-icon-tech">🔔</div>
+            <div id="modalTitleTech" class="modal-title-tech">Notification</div>
+            <div id="modalMessageTech" class="modal-text-tech"></div>
+            <div style="display:flex; justify-content: center; gap: 10px;" id="modalActionsTech">
+                <button class="modal-btn-ok-tech" onclick="closeTechModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let infraCount = 0;
+        let isAddTypeMode = false;
+        let localInfrastructuresCache = []; // Stockage local temporaire pour gérer l'édition fluide
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadTypesEquipement();
+            loadInfrastructures();
+        });
+
+        // CHARGEMENT DES TYPES DEPUIS L'API
+        async function loadTypesEquipement() {
+            const selectEl = document.getElementById('infraType');
+            try {
+                const response = await fetch('/api/types-equipement');
+                const types = await response.json();
+                
+                selectEl.innerHTML = '<option value="">-- Sélectionner un type --</option>';
+                types.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.id; 
+                    option.text = t.nom_type; 
+                    selectEl.add(option);
+                });
+            } catch (err) {
+                console.error("Erreur chargement types:", err);
+                selectEl.innerHTML = '<option value="">Erreur de chargement</option>';
+            }
+        }
+
+        // CHARGEMENT COMPLET DE TOUTES LES COLONNES D'INFRASTRUCTURES
+        async function loadInfrastructures() {
+            const tbody = document.querySelector('#table-infra tbody');
+            try {
+                const response = await fetch('/api/infrastructures');
+                const data = await response.json();
+                
+                tbody.innerHTML = '';
+                localInfrastructuresCache = data; // Remplissage du cache pour l'édition rapide
+                infraCount = data.length;
+                document.getElementById('total-infra-count').innerText = infraCount;
+
+                data.forEach(infra => {
+                    // Formater joliment la date reçue du SQL
+                    let dateFormatee = '-';
+                    if (infra.date_installation) {
+                        dateFormatee = new Date(infra.date_installation).toLocaleDateString('fr-FR');
+                    }
+
+                    // Détermination du style CSS du badge statut
+                    let statutClass = 'ok';
+                    if (infra.statut === 'En Panne') statutClass = 'panne';
+                    if (infra.statut === 'En Maintenance') statutClass = 'maint';
+
+                    const row = `<tr>
+                        <td><strong>${infra.code_unique}</strong></td>
+                        <td>${infra.nom_equipement}</td>
+                        <td>${infra.modele || '-'}</td>
+                        <td>${infra.numero_serie || '-'}</td>
+                        <td>${infra.localisation || '-'}</td>
+                        <td><span style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-weight:bold;">ID: ${infra.type_id || 'Aucun'}</span></td>
+                        <td>${dateFormatee}</td>
+                        <td><span class="badge-statut ${statutClass}">${infra.statut || 'Opérationnel'}</span></td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick="initiateEditInfra('${infra.code_unique}')">Modifier</button>
+                            <button class="btn-action btn-delete" onclick="deleteInfrastructure('${infra.code_unique}', this)">Supprimer</button>
+                        </td>
+                    </tr>`;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            } catch (err) {
+                console.error("Erreur de récupération du catalogue:", err);
+            }
+        }
+
+        // PRÉ-REMPLIR LE FORMULAIRE POUR LA MODIFICATION
+        function initiateEditInfra(codeUnique) {
+            const item = localInfrastructuresCache.find(i => i.code_unique === codeUnique);
+            if (!item) return;
+
+            // Remplissage des inputs
+            document.getElementById('infraCodeUnique').value = item.code_unique;
+            document.getElementById('infraCodeUnique').disabled = true; // Empêcher la modification de la clé primaire
+            document.getElementById('infraNom').value = item.nom_equipement;
+            document.getElementById('infraType').value = item.type_id || '';
+            document.getElementById('infraModele').value = item.modele || '';
+            document.getElementById('infraNumSerie').value = item.numero_serie || '';
+            document.getElementById('infraLieu').value = item.localisation || '';
+            
+            if (item.date_installation) {
+                document.getElementById('infraDateInstallation').value = item.date_installation.split('T')[0];
+            } else {
+                document.getElementById('infraDateInstallation').value = '';
+            }
+            document.getElementById('infraStatut').value = item.statut || 'Opérationnel';
+
+            // Changement d'interface (passer en mode Modification)
+            document.getElementById('editModeFlag').value = "true";
+            document.getElementById('infraModalTitle').innerText = "Modifier l'Infrastructure : " + codeUnique;
+            document.getElementById('btnSubmitInfra').innerText = "Sauvegarder les modifications";
+            document.getElementById('btnSubmitInfra').style.backgroundColor = "#d97706";
+            document.getElementById('btnCancelEdit').style.display = "inline-block";
+
+            // Remonter le scroll de la modal pour voir le formulaire
+            document.getElementById('modal-infra').querySelector('.modal-content').scrollTop = 0;
+        }
+
+        // ANNULER LE MODE MODIFICATION
+        function resetInfraForm() {
+            document.getElementById('infraCodeUnique').value = '';
+            document.getElementById('infraCodeUnique').disabled = false;
+            document.getElementById('infraNom').value = '';
+            document.getElementById('infraType').value = '';
+            document.getElementById('infraModele').value = '';
+            document.getElementById('infraNumSerie').value = '';
+            document.getElementById('infraLieu').value = '';
+            document.getElementById('infraDateInstallation').value = '';
+            document.getElementById('infraStatut').value = 'Opérationnel';
+
+            document.getElementById('editModeFlag').value = "false";
+            document.getElementById('infraModalTitle').innerText = "Enregistrer une Infrastructure";
+            document.getElementById('btnSubmitInfra').innerText = "Enregistrer l'équipement";
+            document.getElementById('btnSubmitInfra').style.backgroundColor = "#0066cc";
+            document.getElementById('btnCancelEdit').style.display = "none";
+        }
+
+        // ENREGISTRER OU METTRE À JOUR VIA L'API CÔTÉ BACKEND
+        async function addItem(type) {
+            if (type === 'infra') {
+                const codeUnique       = document.getElementById('infraCodeUnique').value.trim();
+                const nom              = document.getElementById('infraNom').value.trim();
+                const typeIdRaw        = document.getElementById('infraType').value;
+                const modele           = document.getElementById('infraModele').value.trim();
+                const numSerie         = document.getElementById('infraNumSerie').value.trim();
+                const lieu             = document.getElementById('infraLieu').value.trim();
+                const dateInstallation = document.getElementById('infraDateInstallation').value;
+                const statut           = document.getElementById('infraStatut').value;
+                const isEditMode       = document.getElementById('editModeFlag').value === "true";
+
+                if (!codeUnique || !nom || !typeIdRaw || !lieu) {
+                    openTechModal('❌', 'Erreur de Validation', 'Les champs Code, Nom, Type et Localisation sont obligatoires.');
+                    return;
+                }
+
+                const payload = {
+                    code_unique: codeUnique,
+                    nom_equipement: nom,
+                    localisation: lieu,
+                    type_id: parseInt(typeIdRaw, 10),
+                    modele: modele,
+                    numero_serie: numSerie,
+                    date_installation: dateInstallation || null,
+                    statut: statut
+                };
+
+                // Routage dynamique de l'API en fonction du mode (POST pour créer, PUT pour modifier)
+                const url = isEditMode ? `/api/infrastructures/${codeUnique}` : '/api/infrastructures';
+                const method = isEditMode ? 'PUT' : 'POST';
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok || result.success) {
+                        openTechModal('🏢', 'Succès', isEditMode ? `L'équipement "${nom}" a bien été mis à jour !` : `L'équipement "${nom}" a été ajouté.`);
+                        resetInfraForm();
+                        loadInfrastructures();
+                    } else {
+                        openTechModal('❌', 'Erreur', result.error || 'Une erreur est survenue.');
+                    }
+                } catch (err) {
+                    openTechModal('❌', 'Erreur Serveur', 'Impossible de contacter l\'API de l\'application.');
+                }
+            } 
+            else if (type === 'user') {
+                const nom = document.getElementById('userNom').value.trim();
+                const prenom = document.getElementById('userPrenom').value.trim();
+                if(!nom || !prenom) return;
+                openTechModal('👥', 'Compte Enregistré', `Le compte de ${prenom} ${nom} a été créé.`);
+            }
+        }
+
+        // SUPPRESSION COMMUNIQUANT DIRECTEMENT AVEC LA BDD
+        async function deleteInfrastructure(codeUnique, buttonElement) {
+            if (confirm(`Voulez-vous vraiment supprimer l'équipement [${codeUnique}] de la base de données ?`)) {
+                try {
+                    const response = await fetch(`/api/infrastructures/${codeUnique}`, {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+
+                    if (response.ok || result.success) {
+                        openTechModal('🗑️', 'Supprimé', `L'équipement ${codeUnique} a été effacé avec succès.`);
+                        buttonElement.closest('tr').remove();
+                        infraCount--;
+                        document.getElementById('total-infra-count').innerText = infraCount;
+                    } else {
+                        openTechModal('❌', 'Erreur', result.error || 'Action impossible.');
+                    }
+                } catch (err) {
+                    openTechModal('❌', 'Erreur Serveur', 'Le serveur n\'a pas répondu.');
+                }
+            }
+        }
+
+        // AJOUT D'UN TYPE EN AVANT-PLAN
+        function toggleAddTypeMode() {
+            const selectEl = document.getElementById('infraType');
+            const inputEl = document.getElementById('newTypeInput');
+            const buttonEl = document.getElementById('toggleTypeBtn');
+
+            isAddTypeMode = !isAddTypeMode;
+
+            if (isAddTypeMode) {
+                selectEl.style.display = 'none';
+                inputEl.style.display = 'block';
+                buttonEl.innerText = '✓';
+                buttonEl.style.backgroundColor = '#16a34a';
+                inputEl.focus();
+            } else {
+                const newTypeValue = inputEl.value.trim();
+                if (newTypeValue) {
+                    fetch('/api/types-equipement', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nom_type: newTypeValue })
+                    })
+                    .then(() => loadTypesEquipement())
+                    .catch(() => loadTypesEquipement());
+                }
+                inputEl.value = '';
+                selectEl.style.display = 'block';
+                inputEl.style.display = 'none';
+                buttonEl.innerText = '+';
+                buttonEl.style.backgroundColor = '#0066cc';
+            }
+        }
+
+        function deleteLocalRow(button) { button.closest('tr').remove(); }
+        function openTechModal(icon, title, message) {
+            document.getElementById('modalIconTech').innerText = icon;
+            document.getElementById('modalTitleTech').innerText = title;
+            document.getElementById('modalMessageTech').innerHTML = message;
+            document.getElementById('techModal').style.display = 'flex';
+        }
+        document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); window.location.href = '/login'; });
+        function closeTechModal() { document.getElementById('techModal').style.display = 'none'; }
+        function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; if(modalId==='modal-infra') resetInfraForm(); }
+    </script>
+</body>
+</html>
