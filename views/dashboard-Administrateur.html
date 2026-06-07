@@ -847,29 +847,34 @@
                 openTechModal('👥', 'Compte Enregistré', `Le compte de ${prenom} ${nom} a été créé.`);
             }
         }
-
-        // SUPPRESSION COMMUNIQUANT DIRECTEMENT AVEC LA BDD
-        async function deleteInfrastructure(codeUnique, buttonElement) {
-            if (confirm(`Voulez-vous vraiment supprimer l'équipement [${codeUnique}] de la base de données ?`)) {
-                try {
-                    const response = await fetch(`/api/infrastructures/${codeUnique}`, {
-                        method: 'DELETE'
-                    });
-                    const result = await response.json();
-
-                    if (response.ok || result.success) {
-                        openTechModal('🗑️', 'Supprimé', `L'équipement ${codeUnique} a été effacé avec succès.`);
-                        buttonElement.closest('tr').remove();
-                        infraCount--;
-                        document.getElementById('total-infra-count').innerText = infraCount;
-                    } else {
-                        openTechModal('❌', 'Erreur', result.error || 'Action impossible.');
-                    }
-                } catch (err) {
-                    openTechModal('❌', 'Erreur Serveur', 'Le serveur n\'a pas répondu.');
-                }
-            }
+async function deleteInfrastructure(codeUnique, buttonElement) {
+    // Afficher la modal de confirmation custom
+    document.getElementById('modalIconTech').innerText = '🗑️';
+    document.getElementById('modalTitleTech').innerText = 'Confirmation';
+    document.getElementById('modalMessageTech').innerHTML = 
+        `Voulez-vous vraiment supprimer l'équipement <strong>[${codeUnique}]</strong> de la base de données ?`;
+    
+    // Remplacer le bouton OK par deux boutons
+    document.getElementById('modalActionsTech').innerHTML = `
+        <button class="modal-btn-ok-tech" style="background:#dc2626;" onclick="confirmDeleteInfra('${codeUnique}', this)">Supprimer</button>
+        <button class="modal-btn-ok-tech" style="background:#718096;" onclick="closeTechModal()">Annuler</button>
+    `;
         }
+        async function confirmDeleteInfra(codeUnique) {
+    closeTechModal();
+    try {
+        const response = await fetch(`/api/infrastructures/${codeUnique}`, { method: 'DELETE' });
+        const result = await response.json();
+        if (response.ok || result.success) {
+            openTechModal('🗑️', 'Supprimé', `L'équipement ${codeUnique} a été effacé.`);
+            loadInfrastructures();
+        } else {
+            openTechModal('❌', 'Erreur', result.error || 'Action impossible.');
+        }
+    } catch (err) {
+        openTechModal('❌', 'Erreur Serveur', 'Le serveur n\'a pas répondu.');
+    }
+}
 
         // AJOUT D'UN TYPE EN AVANT-PLAN
         function toggleAddTypeMode() {

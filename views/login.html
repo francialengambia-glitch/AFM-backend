@@ -145,12 +145,12 @@
             <form id="loginForm">
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="email" name="email" autocomplete="off" required value="admin@gmail.com">
+                   <input type="email" id="email" name="email" autocomplete="off" required>
                 </div>
                 
                 <div class="form-group">
                     <label>Mot de passe</label>
-                    <input type="password" id="password" name="password" autocomplete="new-password" required value="PassAdmin123">
+                    <input type="password" id="password" name="password" autocomplete="new-password" required>
                 </div>
                 
                 <button type="submit" class="btn-login">Connexion</button>
@@ -174,18 +174,21 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, mot_de_passe: password })
                 });
 
                 const data = await response.json();
 
-                if (data.success && data.redirectUrl) {
-                    // Si la connexion réussit, on redirige vers l'URL fournie par ton serveur
-                    window.location.href = data.redirectUrl;
-                } else {
-                    // Si le serveur renvoie une erreur (identifiants incorrects, format, etc.)
-                    alert(data.message || "Une erreur est survenue lors de la connexion.");
-                }
+               if (data.success) {
+   const role = data.role.toLowerCase();
+   if (role === 'administrateur' || role === 'admin') window.location.href = '/dashboard-Administrateur.html';
+   else if (role === 'technicien') window.location.href = '/dashboard-technicien.html';
+   else if (role === 'operateur') window.location.href = '/dashboard-operateur.html';
+   else if (role === 'employe') window.location.href = '/dashboard-employe.html';
+   else alert("Role inconnu : " + role);
+} else {
+   alert(data.message || "Identifiants incorrects.");
+}
             } catch (error) {
                 console.error("Erreur de requête :", error);
                 alert("Impossible de joindre le serveur.");

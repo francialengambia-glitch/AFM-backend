@@ -158,29 +158,41 @@ function formatStatut(statutInput) {
 }
 
 // Authentification et gestion des utilisateurs
-app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
+app.post('/api/auth/login', async (req, res) => {
+  const { email, mot_de_passe } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ success: false, message: "Veuillez remplir tous les champs." });
+  if (!email || !mot_de_passe) {
+    return res.status(400).json({ success: false, message: "Veuillez remplir tous les champs." });
+  }
+
+  try {
+    const result = await pool.query(
+      'SELECT * FROM utilisateurs WHERE email = $1', [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, message: "Identifiants incorrects." });
     }
-    
 
-    const sqlQuery = "SELECT * FROM utilisateurs WHERE email = $1 AND mot_de_passe = $2";
-    pool.query(sqlQuery, [email, password], (err, results) => {
-        if (err) return res.status(500).json({ success: false, message: "Erreur serveur." });
+    const user = result.rows[0];
+    const match = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
 
-        if (results.rows.length > 0) {
-            const user = results.rows[0];
-            req.session.userId = user.id;
-            req.session.email = user.email;
-            req.session.role = user.role;
-            return res.json({ success: true, role: user.role, redirectUrl: `dashboard-${user.role.toLowerCase()}.html` });
-        } else {
-            return res.status(401).json({ success: false, message: "Identifiants incorrects." });
-        }
-    });
+    if (!match) {
+      return res.status(401).json({ success: false, message: "Identifiants incorrects." });
+    }
+
+    req.session.userId = user.id;
+    req.session.email = user.email;
+    req.session.role = user.role;
+
+    return res.json({ success: true, role: user.role });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Erreur serveur." });
+  }
 });
+
 
 app.get('/api/auth/logout', (req, res) => {
     req.session.destroy((err) => {
@@ -198,22 +210,49 @@ app.get('/api/infrastructures', (req, res) => {
 });
 
 app.post('/api/infrastructures', (req, res) => {
-    const { code_unique, nom_equipement, localisation } = req.body;
-    const sqlInsert = "INSERT INTO infrastructures (code_unique, nom_equipement, localisation) VALUES ($1, $2, $3) RETURNING id";
-    pool.query(sqlInsert, [code_unique, nom_equipement, localisation], (err, result) => {
+    const { code_unique, nom_equipement, localisation, modele, numero_serie, date_installation, statut } = req.body;
+    const sqlInsert = "INSERT INTO infrastructures (code_unique, nom_equipement, localisation, modele, numero_serie, date_installation, statut) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING code_unique";
+    pool.query(sqlInsert, [code_unique, nom_equipement, localisation, modele, numero_serie, date_installation, statut], (err, result) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
-        res.json({ success: true, message: "Infrastructure insérée !", id: result.rows[0].id });
+        res.json({ success: true, message: "Infrastructure insérée !", id: result.rows[0].code_unique });
     });
+});
+
+// GET un seul équipement par code_unique
+app.get('/api/infrastructures/:code', (req, res) => {
+  const code = req.params.code;
+  pool.query(
+    "SELECT * FROM infrastructures WHERE code_unique = $1",
+    [code],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Non trouvé' });
+      res.json(result.rows[0]);
+    }
+  );
 });
 
 app.put('/api/infrastructures/:code', (req, res) => {
     const code = req.params.code;
-    const { nom_equipement, localisation } = req.body;
-    const sqlUpdate = "UPDATE infrastructures SET nom_equipement = $1, localisation = $2 WHERE code_unique = $3";
-    pool.query(sqlUpdate, [nom_equipement, localisation, code], (err, result) => {
+   const { nom_equipement, localisation, type_id, modele, numero_serie, date_installation, statut } = req.body;
+   const sqlUpdate = "UPDATE infrastructures SET nom_equipement=$1, localisation=$2, type_id=$3, modele=$4, numero_serie=$5, date_installation=$6, statut=$7 WHERE code_unique=$8";
+    pool.query(sqlUpdate, [nom_equipement, localisation, type_id, modele, numero_serie, date_installation, statut, code], (err, result) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
         res.json({ success: true, message: "Infrastructure mise à jour." });
     });
+});
+// GET un seul équipement par code
+app.get('/api/infrastructures/:code', (req, res) => {
+  const code = req.params.code;
+  pool.query(
+    "SELECT * FROM infrastructures WHERE code_unique = $1",
+    [code],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Non trouvé' });
+      res.json(result.rows[0]);
+    }
+  );
 });
 
 app.delete('/api/infrastructures/:code', (req, res) => {
@@ -232,16 +271,23 @@ app.get('/api/utilisateurs', (req, res) => {
     });
 });
 
-app.post('/api/utilisateurs', (req, res) => {
-    const { email, role, mot_de_passe } = req.body;
-    if (!email.endsWith('@gmail.com')) {
-        return res.status(400).json({ success: false, message: "Adresse @gmail.com requise." });
-    }
+app.post('/api/utilisateurs', async (req, res) => {
+  const { email, role, mot_de_passe } = req.body;
+
+  try {
+    if (!mot_de_passe) {
+  return res.status(400).json({ success: false, message: "Mot de passe requis." });
+}
+const mdpFinal = mot_de_passe;
+
     const sqlInsert = "INSERT INTO utilisateurs (email, role, mot_de_passe) VALUES ($1, $2, $3)";
-    pool.query(sqlInsert, [email, role, mot_de_passe || 'PassAFM2026'], (err, result) => {
-        if (err) return res.status(500).json({ success: false, error: err.message });
-        res.json({ success: true, message: "Utilisateur créé." });
+    pool.query(sqlInsert, [email, role, hash], (err, result) => {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, message: "Utilisateur créé." });
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.delete('/api/utilisateurs/:id', (req, res) => {
@@ -338,11 +384,24 @@ app.post('/api/types-equipement', async (req, res) => {
   }
   try {
     if (!hasTypesEquipementTable) {
-      return res.status(500).json({ success: false, error: 'Le support des types d\'équipement n\'est pas encore disponible.' });
+      return res.status(500).json({ success: false, error: "Table non disponible." });
     }
-    const sqlInsert = "INSERT INTO types_equipement (nom_type) VALUES ($1) RETURNING id, nom_type";
-    const { rows } = await pool.query(sqlInsert, [nom_type]);
-    res.json({ success: true, message: "Type d'équipement ajouté !", data: rows[0] });
+    
+    // Vérifie si le type existe déjà
+    const existing = await pool.query(
+      "SELECT id, nom_type FROM types_equipement WHERE nom_type = $1", [nom_type]
+    );
+    
+    if (existing.rows.length > 0) {
+      return res.json({ success: true, message: "Type deja existant.", data: existing.rows[0] });
+    }
+    
+    // Insère si nouveau
+    const { rows } = await pool.query(
+      "INSERT INTO types_equipement (nom_type) VALUES ($1) RETURNING id, nom_type", [nom_type]
+    );
+    res.json({ success: true, message: "Type ajoute !", data: rows[0] });
+    
   } catch (err) {
     console.error('/api/types-equipement POST error:', err.message);
     res.status(500).json({ success: false, error: err.message });

@@ -21,7 +21,7 @@ const getAllUsers = async (req, res) => {
 const bcrypt = require('bcrypt'); // N'oublie pas d'ajouter cette ligne en haut du fichier
 
 const loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, mot_de_passe } = req.body;
     try {
         // 1. Chercher l'utilisateur dans la base
         const result = await pool.query('SELECT * FROM utilisateurs WHERE email = $1', [email]);
@@ -33,9 +33,9 @@ const loginUser = async (req, res) => {
         const user = result.rows[0];
 
         // 2. Comparer le mot de passe reçu avec le hash stocké
-        console.log("Comparaison :", password, "avec", user.mot_de_passe);
+        console.log("Comparaison :", mot_de_passe, "avec", user.mot_de_passe);
         
-        const match = await bcrypt.compare(password, user.mot_de_passe);
+        const match = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
         
         if (match) {
             // Connexion réussie
