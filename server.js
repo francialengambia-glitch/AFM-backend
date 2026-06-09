@@ -12,8 +12,8 @@ const PORT = process.env.PORT || 3000;
 
 // ---------- CORS CONFIGURATION ----------
 app.use(cors({
-  origin: true, 
-  credentials: true,
+  origin: '*',
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -339,7 +339,7 @@ app.get('/api/rapports/gmao', (req, res) => {
 // Récupérer la liste complète des symptômes
 app.get('/api/symptomes', async (req, res) => {
   try {
-    const { rows } = await pool.query("SELECT * FROM symptomes ORDER BY nom_symptome ASC");
+    const { rows } = await pool.query("SELECT * FROM symptomes ORDER BY id_symptome ASC");
     res.json(rows);
   } catch (err) {
     console.error('Erreur GET /api/symptomes :', err.message);
@@ -354,14 +354,81 @@ app.post('/api/symptomes', async (req, res) => {
     return res.status(400).json({ success: false, message: "Le nom du symptôme est requis." });
   }
   try {
-    const sqlInsert = "INSERT INTO symptomes (nom_symptome) VALUES ($1) ON CONFLICT (nom_symptome) DO NOTHING RETURNING *";
-    const { rows } = await pool.query(sqlInsert, [nom_symptome.trim()]);
-    res.json({ success: true, message: "Symptôme enregistré automatiquement en BDD !", data: rows[0] || null });
-  } catch (err) {
+    const sqlInsert = "INSERT INTO symptomes (libelle, description, type_equipement) VALUES ($1, '', 'General') RETURNING *";
+    const result = await pool.query(sqlInsert, [nom_symptome.trim()]);
+    res.json({ success: true, message: "Symptôme enregistré !", data: result.rows[0] || null });
+} catch (err) {
     console.error('Erreur POST /api/symptomes :', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
+  app.put('/api/symptomes/:id', async (req, res) => {
+  const { libelle } = req.body;
+  await pool.query("UPDATE symptomes SET libelle=$1 WHERE id_symptome=$2", [libelle, req.params.id]);
+  res.json({ success: true });
+});
+
+app.delete('/api/symptomes/:id', async (req, res) => {
+  await pool.query("DELETE FROM symptomes WHERE id_symptome=$1", [req.params.id]);
+  res.json({ success: true });
+});
+
+// CRUD - Règles SI-ALORS (Système Expert)
+app.get('/api/regles-si-alors', async (req, res) => {
+  try {
+    const { id_symptome } = req.query;
+    let sql = "SELECT r.*, s.libelle as symptome_libelle FROM regles_si_alors r LEFT JOIN symptomes s ON r.id_symptome = s.id_symptome";
+    const params = [];
+    if (id_symptome) {
+      sql += " WHERE r.id_symptome = $1";
+      params.push(parseInt(id_symptome));
+    }
+    sql += " ORDER BY r.priorite_ordre ASC";
+    const { rows } = await pool.query(sql, params);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/regles-si-alors', async (req, res) => {
+  try {
+    const { titre_solution, condition_si, action_alors, etapes_detail, id_symptome } = req.body;
+    const { rows } = await pool.query(
+      "INSERT INTO regles_si_alors (titre_solution, condition_si, action_alors, etapes_detail, id_symptome, priorite_ordre, taux_succes) VALUES ($1, $2, $3, $4, $5, 1, 0) RETURNING *",
+      [titre_solution, condition_si, action_alors, etapes_detail || '', id_symptome]
+    );
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/regles-si-alors/:id', async (req, res) => {
+  try {
+    await pool.query("DELETE FROM regles_si_alors WHERE id_regle = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// Route : solutions filtrées par symptôme
+app.get('/api/solutions-par-symptome/:id_symptome', async (req, res) => {
+    const { id_symptome } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT id_regle, titre_solution, action_alors, etapes_detail 
+             FROM regles_si_alors 
+             WHERE id_symptome = $1`,
+            [id_symptome]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Erreur solutions par symptôme:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 // ---------- ENDPOINTS TYPES EQUIPEMENT ----------
 app.get('/api/types-equipement', async (req, res) => {

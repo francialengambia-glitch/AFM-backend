@@ -434,6 +434,10 @@
                     <span class="menu-icon">📊</span>
                     <span class="menu-label">Rapports</span>
                 </div>
+                <div class="menu-item" onclick="openModal('modal-symptomes')">
+    <span class="menu-icon">🩺</span>
+    <span class="menu-label">Symptômes</span>
+</div>
             </div>
         </section>
 
@@ -648,6 +652,39 @@
             </button>
         </div>
     </div>
+
+    <!-- MODAL SYMPTÔMES -->
+<div id="modal-symptomes" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">Gestion des Symptômes</div>
+            <button class="btn-close" onclick="closeModal('modal-symptomes')">&times;</button>
+        </div>
+
+        <div class="form-row" style="grid-template-columns: 1fr auto;">
+            <div class="form-group">
+                <label class="form-label">Libellé du symptôme</label>
+                <input type="text" id="symptomeLibelle" class="form-control" placeholder="Ex: Bruit anormal">
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn-action btn-add" id="btnSubmitSymptome" onclick="saveSymptome()">Ajouter</button>
+            </div>
+        </div>
+        <input type="hidden" id="symptomeEditId" value="">
+
+        <table class="crud-table" id="table-symptomes">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Libellé</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
 
     <!-- NOTIFICATION SYSTEM -->
     <div id="techModal" class="modal-overlay-tech">
@@ -918,8 +955,88 @@ async function deleteInfrastructure(codeUnique, buttonElement) {
         }
         document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); window.location.href = '/login'; });
         function closeTechModal() { document.getElementById('techModal').style.display = 'none'; }
-        function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+        function openModal(modalId) { 
+    document.getElementById(modalId).style.display = 'flex'; 
+    if (modalId === 'modal-symptomes') loadSymptomes();
+}
         function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; if(modalId==='modal-infra') resetInfraForm(); }
+
+// CRUD Symptômes
+async function loadSymptomes() {
+    const tbody = document.querySelector('#table-symptomes tbody');
+    try {
+        const response = await fetch('/api/symptomes');
+        const data = await response.json();
+        tbody.innerHTML = '';
+        data.forEach(s => {
+            tbody.insertAdjacentHTML('beforeend', `
+                <tr>
+                    <td>${s.id_symptome}</td>
+                    <td>${s.libelle}</td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick="editSymptome(${s.id_symptome}, '${s.libelle}')">Modifier</button>
+                        <button class="btn-action btn-delete" onclick="deleteSymptome(${s.id_symptome}, this)">Supprimer</button>
+                    </td>
+                </tr>
+            `);
+        });
+    } catch (err) {
+        console.error('Erreur chargement symptômes:', err);
+    }
+}
+
+async function saveSymptome() {
+    const libelle = document.getElementById('symptomeLibelle').value.trim();
+    const editId = document.getElementById('symptomeEditId').value;
+    if (!libelle) return openTechModal('❌', 'Erreur', 'Le libellé est obligatoire.');
+
+    const url = editId ? `/api/symptomes/${editId}` : '/api/symptomes';
+    const method = editId ? 'PUT' : 'POST';
+    const body = editId ? { libelle } : { nom_symptome: libelle };
+
+    try {
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const result = await response.json();
+        if (result.success) {
+            openTechModal('🩺', 'Succès', editId ? 'Symptôme modifié !' : 'Symptôme ajouté !');
+            document.getElementById('symptomeLibelle').value = '';
+            document.getElementById('symptomeEditId').value = '';
+            document.getElementById('btnSubmitSymptome').innerText = 'Ajouter';
+            loadSymptomes();
+        }
+    } catch (err) {
+        openTechModal('❌', 'Erreur', 'Impossible de contacter le serveur.');
+    }
+}
+
+function editSymptome(id, libelle) {
+    document.getElementById('symptomeLibelle').value = libelle;
+    document.getElementById('symptomeEditId').value = id;
+    document.getElementById('btnSubmitSymptome').innerText = 'Sauvegarder';
+}
+
+async function deleteSymptome(id, btn) {
+    document.getElementById('modalIconTech').innerText = '🗑️';
+    document.getElementById('modalTitleTech').innerText = 'Confirmation';
+    document.getElementById('modalMessageTech').innerHTML = 'Supprimer ce symptôme ?';
+    document.getElementById('modalActionsTech').innerHTML = `
+        <button class="modal-btn-ok-tech" style="background:#dc2626;" onclick="confirmDeleteSymptome(${id})">Supprimer</button>
+        <button class="modal-btn-ok-tech" style="background:#718096;" onclick="closeTechModal()">Annuler</button>
+    `;
+    document.getElementById('techModal').style.display = 'flex';
+}
+
+async function confirmDeleteSymptome(id) {
+    closeTechModal();
+    await fetch(`/api/symptomes/${id}`, { method: 'DELETE' });
+    openTechModal('🗑️', 'Supprimé', 'Symptôme supprimé avec succès.');
+    loadSymptomes();
+}
+
     </script>
 </body>
 </html>

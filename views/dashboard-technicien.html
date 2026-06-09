@@ -344,18 +344,53 @@
                 Système d'Apprentissage Expert
             </div>
             
-            <div class="knowledge-inputs-grid">
-                <div class="form-field" style="margin-bottom:0;">
-                    <label for="problemInput">Symptômes</label>
-                    <input type="text" id="problemInput" class="input-interactive" placeholder="Ex: Ne refroidit plus + fort cliquetis mécanique" oninput="syncLogicRule()">
-                </div>
-                
-                <div class="form-field" style="margin-bottom:0;">
-                    <label for="solutionInput">Solution apportée</label>
-                    <input type="text" id="solutionInput" class="input-interactive" placeholder="Ex: Remplacement des roulements de turbine" oninput="syncLogicRule()">
-                </div>
-            </div>
+           <div class="knowledge-inputs-grid">
 
+            <div class="form-field" style="margin-bottom:0;">
+    <label for="problemInput">Symptômes</label>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <select id="problemInput" class="input-interactive" 
+            onchange="syncLogicRule()" style="flex:1;">
+            <option value="">-- Sélectionner un symptôme --</option>
+        </select>
+        <button onclick="afficherAjoutSymptome()" 
+            style="background:var(--brand-main); color:white; border:none; 
+            border-radius:6px; padding:10px 14px; font-size:14pt; 
+            cursor:pointer; font-weight:bold;">+</button>
+    </div>
+</div>
+
+<div id="ajoutSymptomeZone" style="display:none; background:#f0f4ff; 
+    border:1px solid var(--brand-main); border-radius:6px; padding:14px; margin-top:8px;">
+    <label style="font-size:9pt; font-weight:700; color:var(--brand-dark); 
+        text-transform:uppercase;">Nouveau symptôme</label>
+    <input type="text" id="nouveauSymptome" class="input-interactive" 
+        placeholder="Ex: Surchauffe du compresseur" style="margin-top:6px;">
+    <div style="display:flex; gap:8px; margin-top:10px;">
+        <button onclick="ajouterNouveauSymptome()" class="btn-submit-db" 
+            style="padding:8px 20px; margin-top:0;">Ajouter</button>
+        <button onclick="document.getElementById('ajoutSymptomeZone').style.display='none'" 
+            style="background:#64748b; color:white; border:none; border-radius:6px; 
+            padding:8px 20px; cursor:pointer; font-size:9pt; font-weight:700;">Annuler</button>
+    </div>
+</div>
+  
+  <div class="form-field" style="margin-bottom:0;">
+    <label for="solutionInput">Solution apportée</label>
+    <input type="text" id="solutionInput" class="input-interactive"
+      placeholder="Ex: Remplacement des roulements de turbine"
+      oninput="syncLogicRule()">
+  </div>
+
+  <!-- NOUVEAU CHAMP -->
+  <div class="form-field" style="margin-bottom:0;">
+    <label for="detailInput">Détail de la solution</label>
+    <textarea id="detailInput" class="input-interactive" rows="4"
+      placeholder="Ex: 1. Couper l'alimentation&#10;2. Démonter le carter&#10;3. Remplacer les roulements&#10;4. Remonter et tester"
+      style="resize:vertical;"></textarea>
+  </div>
+</div>
+         
             <div class="logic-row-premium">
                 <span class="badge-cond">Symptômes / SI</span>
                 <span class="val-cond">[ <span id="previewProblem" style="color: var(--brand-main);">...</span> ]</span>
@@ -385,9 +420,10 @@
 
         // CHARGEMENT INITIAL DES TICKETS ASSIGNÉS DEPUIS LE SERVEUR COULOIR API
         window.addEventListener('DOMContentLoaded', () => {
-            loadTicketsFromServer();
-            setInterval(loadTicketsFromServer, 10000);
-        });
+    loadTicketsFromServer();
+    setInterval(loadTicketsFromServer, 10000);
+    loadSymptomesDropdown();
+});
 
         async function loadTicketsFromServer() {
             try {
@@ -564,7 +600,7 @@
                         document.getElementById(`card-${ticketId}`).style.borderLeftColor = 'var(--status-done)';
                     }
 
-                    document.getElementById('problemInput').value = `${problemTitle} (${location})`;
+            
                     document.getElementById('solutionInput').value = "";
                     document.getElementById('solutionInput').focus();
                     syncLogicRule();
@@ -583,49 +619,96 @@
         }
 
         // TRANSMISSION ASYNCHRONE INTÉGRÉE (MOTEUR EXPERT / API SOLUTIONS)
-        function sendToExpertDatabase() {
-            const prob = document.getElementById('problemInput').value;
-            const sol = document.getElementById('solutionInput').value;
+       function sendToExpertDatabase() {
+    const selectedOption = document.getElementById('problemInput');
+    const id_symptome = selectedOption.value;
+    const symptome_libelle = selectedOption.options[selectedOption.selectedIndex].text;
+    const sol = document.getElementById('solutionInput').value;
 
-            if (!prob || !sol) {
-                openTechModal(
-                    '❌', 
-                    'Champs Incomplets', 
-                    'Veuillez renseigner les <strong>Symptômes</strong> et la <strong>Solution apportée</strong> avant de valider votre règle expert.'
-                );
-                return;
-            }
+    if (!id_symptome || !sol) {
+        openTechModal('❌', 'Champs Incomplets', 'Veuillez sélectionner un <strong>Symptôme</strong> et renseigner la <strong>Solution apportée</strong>.');
+        return;
+    }
 
-            // Transmission asynchrone à l'API d'apprentissage automatique de la GMAO
-            fetch('/api/solutions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    symptome: prob,
-                    solution: sol,
-                    details_solution: "Saisie manuelle via le Moteur Expert Technicien."
-                })
+    fetch('/api/regles-si-alors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            titre_solution: sol,
+            condition_si: symptome_libelle,
+            action_alors: sol,
+          etapes_detail: document.getElementById('detailInput').value,
+            id_symptome: parseInt(id_symptome)
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        openTechModal('🧠', 'Apprentissage Réussi', 'La règle SI/ALORS a été enregistrée dans la base de données !');
+        document.getElementById('problemInput').value = '';
+        document.getElementById('solutionInput').value = '';
+        document.getElementById('detailInput').value = '';
+        syncLogicRule();
+    })
+    .catch(err => {
+        openTechModal('⚠️', 'Erreur Réseau', "Impossible de joindre le serveur.");
+    });
+}
+
+        async function loadSymptomesDropdown() {
+    try {
+        const response = await fetch('/api/symptomes');
+        const data = await response.json();
+        const select = document.getElementById('problemInput');
+        data.forEach(s => {
+            const option = document.createElement('option');
+            option.value = s.id_symptome;
+            option.text = s.libelle;
+            select.add(option);
+        });
+    } catch (err) {
+        console.error('Erreur chargement symptômes:', err);
+    }
+}
+
+function afficherAjoutSymptome() {
+    const zone = document.getElementById('ajoutSymptomeZone');
+    zone.style.display = zone.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('nouveauSymptome').focus();
+}
+
+async function ajouterNouveauSymptome() {
+    const libelle = document.getElementById('nouveauSymptome').value.trim();
+    if (!libelle) return;
+
+    try {
+        const res = await fetch('/api/symptomes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                libelle, 
+                description: '', 
+                type_equipement: 'Général' 
             })
-            .then(res => res.json())
-            .then(data => {
-                openTechModal(
-                    '🧠', 
-                    'Apprentissage Réussi', 
-                    'La règle de diagnostic (SI / ALORS) a été enregistrée avec succès dans le moteur de connaissances de la GMAO.'
-                );
-                document.getElementById('problemInput').value = "";
-                document.getElementById('solutionInput').value = "";
-                if (typeof syncLogicRule === 'function') syncLogicRule();
-            })
-            .catch(err => {
-                console.error("Erreur d'apprentissage base de connaissances :", err);
-                openTechModal(
-                    '⚠️', 
-                    'Erreur Réseau', 
-                    "Impossible de joindre le service d'apprentissage de la GMAO."
-                );
-            });
-        }
+        });
+        const data = await res.json();
+
+        const select = document.getElementById('problemInput');
+        const option = document.createElement('option');
+        option.value = data.id_symptome;
+        option.text = libelle;
+        select.add(option);
+        select.value = data.id_symptome;
+
+        document.getElementById('ajoutSymptomeZone').style.display = 'none';
+        document.getElementById('nouveauSymptome').value = '';
+        syncLogicRule();
+
+        openTechModal('✅', 'Symptôme Ajouté', `"${libelle}" a été ajouté !`);
+    } catch (err) {
+        openTechModal('⚠️', 'Erreur', 'Impossible d\'ajouter le symptôme.');
+    }
+}
+
     </script>
 </body>
 </html>

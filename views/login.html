@@ -178,9 +178,9 @@
                 });
 
                 const data = await response.json();
-
-               if (data.success) {
-   const role = data.role.toLowerCase();
+if (data.success) {
+   const role = data.role.trim().toLowerCase()
+     .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
    if (role === 'administrateur' || role === 'admin') window.location.href = '/dashboard-Administrateur.html';
    else if (role === 'technicien') window.location.href = '/dashboard-technicien.html';
    else if (role === 'operateur') window.location.href = '/dashboard-operateur.html';
